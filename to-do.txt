@@ -1,0 +1,8 @@
+Correções no projeto: 
+    * Chamada do escalonador. 
+    * Problema com o matplotlib.
+    * Problema com o executável (pyinstaller).
+    * Melhorar interface (informar simulador e quantum durante a execução)
+
+Novos requisitos: 
+
