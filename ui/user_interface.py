@@ -8,7 +8,7 @@ import os, sys, tty, termios
 
 class SystemInterface:
     def __init__(self):
-        self.default_file = "config/DEFAULT.txt"           # Configuracao padrao do sistema, que pode ser sobreescrito pelo usuario
+        self.default_file = "config/priod.txt"           # Configuracao padrao do sistema, que pode ser sobreescrito pelo usuario
     
         if getattr(sys, 'frozen', False):
             self.dir = sys._MEIPASS
@@ -19,8 +19,8 @@ class SystemInterface:
 
         self.file_path = os.path.join(self.dir, self.default_file)
 
-        self.scheduler, self.quantum, self.tasks = read_config(self.file_path)
-        self.simulator1 = Simulator(self.scheduler, self.quantum, self.tasks)
+        self.scheduler, self.quantum, self.alpha, self.tasks = read_config(self.file_path)
+        self.simulator1 = Simulator(self.scheduler, self.quantum, self.alpha, self.tasks)
         self.tasks_map = {}
 
     # Metodo principal classe para controlar outras partes do programa de acordo com as entradas do usuario
@@ -60,31 +60,33 @@ class SystemInterface:
                         caminho = input("Digite o caminho do arquivo: ")
                         configs = read_config(caminho)  # le o arquivo do usuario e sobrescreve o arquivo padrao
                         
-                        scheduler, quantum, tasks = configs
+                        scheduler, quantum, alpha, tasks = configs
                     
                         if scheduler is None:
                             print(f"Erro ao carregar arquivo\n")
                         
                         else:
                             # instancia uma nova simulacao com base nas consiguracoes lidas no arquivo do usuario
-                            self.scheduler, self.quantum, self.tasks = configs
-                            self.simulator1 = Simulator(self.scheduler, self.quantum, self.tasks)
+                            self.scheduler, self.quantum, self.alpha, self.tasks = configs
+                            self.simulator1 = Simulator(self.scheduler, self.quantum, self.alpha, self.tasks)
                             print(f"Arquivo '{caminho}' carregado.\n")
                     
                     case 3: # sobreescreve arquivo default com as config do usuario
-                        scheduler, quantum, tasks_list = self.create_tasks()  # metodo para criacao das configuracoes do sistema e tarefas
+                        scheduler, quantum, alpha, tasks_list = self.create_tasks()  # metodo para criacao das configuracoes do sistema e tarefas
 
                         if scheduler is None:
                             print("Nenhuma alteração foi salva")
                         
-                        create_config(self.file_path, scheduler, quantum, tasks_list) 
+                        create_config(self.file_path, scheduler, quantum, alpha, tasks_list) 
             
                         # instancia uma nova simulacao com base nas consiguracoes passadas pelo usuario
                         self.scheduler = scheduler
                         self.quantum = quantum
+                        self.alpha = alpha
                         self.tasks = tasks_list 
                         
-                        self.simulator1 = Simulator(self.scheduler, self.quantum, self.tasks)
+                        self.simulator1 = Simulator(self.scheduler, self.quantum, self.alpha, self.tasks)
+                        
                         self.tasks_map = {} 
                     
                     case 4:
@@ -98,11 +100,11 @@ class SystemInterface:
     def create_tasks(self):                     # metodo principal para parametrizacao do sistema do usuario
         try:
             self.clear_terminal()   # limpa terminal
-            print("Escolha o escalonador entre as opcoes: (1. FCFS, 2. SRTF e 3. PRIOP)\n")
+            print("Escolha o escalonador entre as opcoes: (1. FCFS, 2. SRTF, 3. PRIOP e 4. PRIOPEnv)\n")
             
             # le e verifica as entradas de escalonamento e quantum 
 
-            valid_scheduler = [1, 2, 3]
+            valid_scheduler = [1, 2, 3, 4]
             entry = int(input("Digite o valor correspondente: "))
             if entry not in valid_scheduler:
                 raise ValueError(f"Entrada {entry} invalida.")
@@ -113,6 +115,8 @@ class SystemInterface:
             quantum = int(input("Digite o valor do quantum: "))
             if quantum <= 0:
                 raise ValueError(f"Entrada {quantum} invalida.")
+            
+            alpha = int(input("Digite o fator de envelhecimento (alpha):"))
             
             print("\n ----- Configuracao de tarefas ----- \n")
             created_tasks = [] # lista para armazenar as tarefas criadas pelo usuario
@@ -134,7 +138,7 @@ class SystemInterface:
         except Exception as e:
             print(f"ERRO: {e}")
             return None, 0, []
-        return scheduler, quantum, created_tasks
+        return scheduler, quantum, alpha, created_tasks
 
     def edit_task_aux(self):                    # metodo para receber as configuracoes das tarefas do usuario
         try:
@@ -227,8 +231,7 @@ class SystemInterface:
         if not display_ids: 
             print(f"\ntick:\t{current_tick}")                # imprime os ticks
             return
-
-        print(f"Escalonador: {self.scheduler} Quantum: {self.quantum}")
+            
         for task_id in display_ids:                          # exibe cada tarefa
             history = tick_data[task_id]
             task = self.tasks_map[task_id]

@@ -3,7 +3,7 @@ from .clock import SystemClock
 from .scheduler import schedulers
 
 class Simulator():
-    def __init__(self, scheduler, quantum, tasks_list):
+    def __init__(self, scheduler, quantum, alpha, tasks_list):
         self.clock = SystemClock()
         
         valid_scheduler = schedulers.get(scheduler)                      # verifica que o scheduler esta no dicionario
@@ -11,13 +11,14 @@ class Simulator():
             raise ValueError(f"Escalonador '{scheduler}' inválido")
         self.scheduler = valid_scheduler()
 
+        self.alpha = alpha
         self._quantum = quantum
         self._quantum_tick = 0
 
         self.tasks_list = tasks_list
         self.current_task = None            # apenas uma tarefa pode estar no estado RUNNING
         self.ready_tasks = []    
-        self.tick_data = []               # lista para armazenar as informacoes de cada tick
+        self.tick_data = []                 # lista para armazenar as informacoes de cada tick
     
     # checha se uma nova tarefa chegou no tick atual do sistema, se sim muda seu estado e coloca na lista de prontos
     def check_new_tasks(self):
@@ -31,7 +32,7 @@ class Simulator():
             task._waiting_time += 1
 
     def select_task(self):            # chama o algoritmo de selecao de tarefa dos escalonamento
-        return self.scheduler.select_next_task(self.ready_tasks, self.current_task)
+        return self.scheduler.select_next_task(self.ready_tasks, self.current_task, self.alpha)
     
     def existing_tasks(self):         # verifica se existe tarefa que falta executar
         for task in self.tasks_list:
@@ -65,11 +66,13 @@ class Simulator():
             'id': task.id,  
             'state': 'ready'  
             })
+
     # arrumar chamada do scheduler
     # Metodo de execucao de um tick da simulacao 
     def tick(self):
         self.increment_waiting_time()
         self.check_new_tasks()
+        rescheduler = False
 
         current_tick = self.clock.current_time
 
@@ -79,8 +82,8 @@ class Simulator():
                 chosen_task = self.select_task()
                 self.ready_tasks.remove(chosen_task)    # PRONTA -> EXECUTANDO
                 self.current_task = chosen_task
-                self.current_task.set_running()
 
+                self.current_task.set_running()
                 self._quantum_tick = 0                  # reseta o tick
 
         else: # verifica se uma tarefa precisa ser interrompida por preempcao 
@@ -91,6 +94,7 @@ class Simulator():
 
                 self.current_task = chosen_task                 # a outra tarefa recebe o processamento
                 self.ready_tasks.remove(self.current_task)
+
                 self.current_task.set_running()
                 self._quantum_tick = 0                 
 

@@ -12,4 +12,4 @@ class Scheduler(Enum):
     FCFS   = 1
     SRTF   = 2
     PRIOP  = 3
-
+    PRIOPEnv = 4

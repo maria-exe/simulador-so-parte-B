@@ -7,4 +7,3 @@ if __name__ == "__main__":
         system.main_menu()
     except KeyboardInterrupt:
         system.stop()
-

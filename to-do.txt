@@ -5,4 +5,16 @@ Correções no projeto:
     * Melhorar interface (informar simulador e quantum durante a execução)
 
 Novos requisitos: 
+    * retroceder simulação passo a passo usando o histórico
+    * um gráfico para cada passo?
+    * cor no formato RGB hexadecimal “F0E0D0” 
+    * prioridade estática -> maior prioridade
+    * PRIOPEnv
 
+
+A primeira linha do arquivo de configuração deverá ser no formato:
+PRIOPEnv;5;1 onde o primeiro campo indica o nome do algoritmo, o segundo
+campo indica o quantum para as tarefas, e o terceiro campo indica o valor do
+alpha usado para fazer o envelhecimento
+
+* Mutex e E/S 

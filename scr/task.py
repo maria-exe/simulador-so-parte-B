@@ -39,3 +39,46 @@ class TaskControlBlock:
     
     def set_suspended(self):
         self._state = TaskState.SUSPENDED
+
+def create_events(events):
+    events_list = []
+    
+    for env in events:
+        env = env.strip()
+      
+        try:
+            command, params = env.split(':')
+            command = command.strip()
+            params = params.strip()
+        except ValueError:
+             print(f"Formato de evento inválido: {env}")
+             continue
+
+        event_data = {}
+
+        if command.startswith('ML') or command.startswith('MU'):
+            id_mutex = int(command[2:]) 
+            time = int(params)
+            
+            event_data = {
+                'type': 'MUTEX_LOCK' if command.startswith('ML') else 'MUTEX_UNLOCK',
+                'resource_id': id_mutex,
+                'time': time
+            }
+        elif command == 'IO':
+            try:
+                start_time, duration = map(int, params.split('-'))
+                event_data = {
+                    'type': 'IO',
+                    'time': start_time,
+                    'duration': duration
+                }
+            except ValueError:
+                print(f"Erro no formato de IO: {params}")
+                continue
+        
+        if event_data:
+            events_list.append(event_data)
+
+    events_list.sort(key=lambda x: x['time'])
+    return events_list

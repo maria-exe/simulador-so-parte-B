@@ -1,4 +1,4 @@
-from .task import TaskControlBlock
+from .task import TaskControlBlock, create_events
 from .scheduler import schedulers
 """ Implementacao de metodos para leitura e escrita do arquivo de parametrizacao/configuracao das:
     
@@ -9,10 +9,10 @@ from .scheduler import schedulers
     as tarefas no TCB com base nessas configuracoes 
 
 """
-def create_config(filepath, scheduler, quantum, temp_tasks_list):  # criacao/reescrita de arquivos
+def create_config(filepath, scheduler, quantum, alpha, temp_tasks_list):  # criacao/reescrita de arquivos
     try: 
         with open(filepath, 'w', encoding='utf-8') as file:
-            f_line = f"{scheduler};{quantum}\n"                   
+            f_line = f"{scheduler};{quantum};{alpha}\n"                   
             file.write(f_line)                                     # escreve a primeira linha do arquivo com scheduler e quantum
 
             for task in temp_tasks_list:                           # itera por cada linha no arquivo
@@ -21,11 +21,11 @@ def create_config(filepath, scheduler, quantum, temp_tasks_list):  # criacao/ree
                     str(task.color),    
                     str(task.start),    
                     str(task.duration), 
-                    str(task.prio)      
+                    str(task.prio),
+                    str(task.events)      
                 ]
                 t_line = ";".join(t_line) + "\n"        # junta cada info da tarefa, separadas apenas por ; 
                 file.write(t_line)                      # escreve a linha no arquivo
-
             return True
    
     except IOError:                                            # captura de erro de escrita
@@ -43,17 +43,21 @@ def read_config(file): # leitura de arquivos
             config_file.seek(0)                                     # reposiciona o cursor para o topo do arquivo
                 
             f_line = config_file.readline().strip('\n').split(';')  # verifica se o arquivo contem o escalonador e quantum
-            if len(f_line) != 2:
-                raise ValueError("Arquivo mal estruturado. Deve ser: 'escalonador;quantum'")
+            if len(f_line) != 3:
+                raise ValueError("Arquivo mal estruturado. Deve ser: 'escalonador;quantum;alpha'")
             
             scheduler = f_line[0]
             quantum = int(f_line[1])
+            alpha = int(f_line[2])
 
             if scheduler not in schedulers: 
                 raise ValueError(f"Escalonador {scheduler} invalido.")
             
             if quantum <= 0:
                 raise ValueError(f"Quantum {quantum} invalido.")
+            
+            if alpha < 0:
+                raise ValueError(f"Fator envelhecimento {alpha} invalido.")
             
             tasks_list = []
             for line in config_file:                        # le cada linha do arquivo
@@ -67,6 +71,9 @@ def read_config(file): # leitura de arquivos
                 start = int(line[2])                        # pega cada configuracao da tarefa
                 duration = int(line[3])
                 prio = int(line[4])
+                events = line[5:]
+
+                events_list = create_events(events)
  
                 if duration <= 0:
                     raise ValueError("Valor de duracao invalido.")
@@ -75,13 +82,13 @@ def read_config(file): # leitura de arquivos
                 if prio < 0:
                     raise ValueError("Valor de prioridade invalido.")
                 
-                
                 new_task = TaskControlBlock(       # instancia uma tarefa no TCB
                 t_id = t_id,
                 color = color,
                 start = start, 
                 duration = duration, 
-                prio = prio
+                prio = prio,
+                events = events_list
                 )   
                 tasks_list.append(new_task)        # a adiciona na lista de tarefas
     
@@ -89,10 +96,10 @@ def read_config(file): # leitura de arquivos
  
     except FileNotFoundError:
         print(f"Arquivo {file} nao encontrado.")
-        return None, 0, []
+        return None, 0, 0, []
     
     except Exception as e:
         print(f"Erro: {e}")
-        return None, 0, []
+        return None, 0, 0, []
 
-    return scheduler, quantum, tasks_list
+    return scheduler, quantum, alpha, tasks_list
